@@ -1,0 +1,47 @@
+services:
+  api:
+    image: sidharthsingh7/daisy:api
+    build: ./api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DAISY_DB_PATH: /data/daisy.db
+    volumes:
+      - daisy-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    image: sidharthsingh7/daisy:web
+    build:
+      context: ./app
+      args:
+        API_INTERNAL_URL: http://api:8000
+    restart: unless-stopped
+    environment:
+      HOSTNAME: "0.0.0.0"
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  mcp:
+    image: sidharthsingh7/daisy:mcp
+    build: ./mcp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7004:8000"
+    environment:
+      DAISY_API_URL: http://api:8000
+      MCP_TOKEN: ${MCP_TOKEN:-}
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  daisy-data:

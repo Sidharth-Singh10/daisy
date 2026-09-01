@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+
+# next.js
+.next
+out
+
+# python
+__pycache__/
+*.pyc
+.venv
+
+# env
+.env
+.env.local
+.env.*.local
+
+# data
+*.db
+daisy-data
+scraped_rows.json
+neetcode150_leetcode_links.txt
+
+# playwright mcp artifacts
+.playwright-mcp/
+
+# misc
+.DS_Store
+*.log
