@@ -130,7 +130,7 @@ export default function PlannerPage() {
     [load]
   );
 
-  const selectedDay = selected ? cal?.days[selected] ?? null : null;
+  const selectedDay = cal?.days[selected ?? today] ?? null;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-24 pt-28 md:pt-32">
