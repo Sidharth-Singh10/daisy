@@ -8,6 +8,9 @@ A dark-mode checklist planner + gym tracker + NeetCode 150 → LeetCode referenc
 
 <img width="2482" height="1324" alt="image" src="https://github.com/user-attachments/assets/426af383-66de-4442-8670-4ac1aca683c7" />
 
+<img width="2490" height="1327" alt="image" src="https://github.com/user-attachments/assets/e1a06698-fb80-4117-88d3-71ccf8be1d31" />
+
+
 - `/` — under construction hero
 - `/planner` — month calendar with per-day `X/N` completion (daily / weekly / monthly tasks)
 - `/gym` — workout calendar: log which muscle groups you trained per day, with all-time + weekly frequency stats
