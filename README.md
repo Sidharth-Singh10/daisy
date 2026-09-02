@@ -1,6 +1,6 @@
 # daisy
 
-A dark-mode checklist planner + NeetCode 150 → LeetCode reference. (juss procrastination pro maxx )
+A dark-mode checklist planner + gym tracker + NeetCode 150 → LeetCode reference. (juss procrastination pro maxx )
 
 <img width="2485" height="1342" alt="image" src="https://github.com/user-attachments/assets/c7495418-bf5e-4bbc-bee9-0c738f3e2df9" />
 
@@ -8,19 +8,16 @@ A dark-mode checklist planner + NeetCode 150 → LeetCode reference. (juss procr
 
 <img width="2482" height="1324" alt="image" src="https://github.com/user-attachments/assets/426af383-66de-4442-8670-4ac1aca683c7" />
 
-
-
-
-
 - `/` — under construction hero
 - `/planner` — month calendar with per-day `X/N` completion (daily / weekly / monthly tasks)
+- `/gym` — workout calendar: log which muscle groups you trained per day, with all-time + weekly frequency stats
 - `/leetcode` — all 150 NeetCode problems, grouped by pattern, mapped to LeetCode
 
 ## Architecture
 
 ```
 app/    Next.js 15 (App Router, Tailwind v4, framer-motion, Geist + Fraunces)
-api/    FastAPI + SQLite (tasks, completions, calendar resolution)
+api/    FastAPI + SQLite (tasks, completions, calendar + gym workouts, muscle groups, stats)
 mcp/    fastmcp stdio server — agents update the planner over HTTP
 scripts/parse_leetcode.py — neetcode150_leetcode_links.txt → app/src/data/neetcode150.json
 ```
@@ -86,7 +83,9 @@ Container agents:
 stdio mode is still available for ad-hoc runs: `python mcp/server.py stdio`.
 
 Tools: `planner_list_tasks`, `planner_add_task`, `planner_update_task`,
-`planner_remove_task`, `planner_check` (done/undone/toggle), `planner_status`.
+`planner_remove_task`, `planner_check` (done/undone/toggle), `planner_status`,
+`gym_list_groups`, `gym_add_group`, `gym_rename_group`, `gym_remove_group`,
+`gym_log`, `gym_stats`.
 
 Reminder pattern — an agent (cron or a scheduled opencode run) calls
 `planner_status(date: "today")`, reads the pending list, and reminds you.
@@ -102,6 +101,13 @@ Reminder pattern — an agent (cron or a scheduled opencode run) calls
 | DELETE | `/api/tasks/{id}` | cascades completions |
 | GET | `/api/calendar?month=YYYY-MM` | per-day `{done, total, tasks[]}` |
 | PUT | `/api/completions/{id}?date=YYYY-MM-DD[&state=done\|undone]` | toggle or set |
+| GET | `/api/gym/groups` | list muscle groups |
+| POST | `/api/gym/groups` | `{name}` |
+| PATCH | `/api/gym/groups/{id}` | `{name?, position?}` |
+| DELETE | `/api/gym/groups/{id}` | cascades workout history |
+| GET | `/api/gym/calendar?month=YYYY-MM` | per-day `{groups[]}` |
+| PUT | `/api/gym/workouts/{id}?date=YYYY-MM-DD[&state=done\|undone]` | toggle or set |
+| GET | `/api/gym/stats` | all-time + this-week frequencies |
 
 Weekly `slot` = weekday 0–6 (Mon=0); monthly `slot` = day 1–31.
 

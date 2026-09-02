@@ -137,3 +137,81 @@ def toggle_completion(
     key = db.resolve_key(task["cadence"], d)
     done = db.set_completion(task_id, key, state)
     return {"task_id": task_id, "period_key": key, "date": date, "done": done}
+
+
+@app.get("/api/gym/groups")
+def list_groups() -> list[dict]:
+    return db.fetch_groups()
+
+
+class GroupCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+
+
+class GroupUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=40)
+    position: int | None = None
+
+
+@app.post("/api/gym/groups", status_code=201)
+def create_group(body: GroupCreate) -> dict:
+    try:
+        return db.create_group(body.name.strip())
+    except sqlite3.Error as e:
+        raise HTTPException(400, "group name already exists") from e
+
+
+@app.patch("/api/gym/groups/{group_id}")
+def patch_group(group_id: int, body: GroupUpdate) -> dict:
+    group = db.update_group(group_id, body.model_dump(exclude_none=True))
+    if not group:
+        raise HTTPException(404, "group not found")
+    return group
+
+
+@app.delete("/api/gym/groups/{group_id}", status_code=204)
+def remove_group(group_id: int) -> None:
+    if not db.delete_group(group_id):
+        raise HTTPException(404, "group not found")
+
+
+@app.get("/api/gym/calendar")
+def gym_calendar(month: str = Query(..., pattern=r"^\d{4}-\d{2}$")) -> dict:
+    year, m = map(int, month.split("-"))
+    days = db.month_days(year, m)
+    groups = db.fetch_groups()
+    day_map = db.fetch_workout_days(days)
+    return {
+        "month": month,
+        "days": {
+            d.isoformat(): {
+                "groups": [
+                    {"id": g["id"], "name": g["name"], "done": g["id"] in day_map.get(d.isoformat(), set())}
+                    for g in groups
+                ]
+            }
+            for d in days
+        },
+    }
+
+
+@app.put("/api/gym/workouts/{group_id}")
+def toggle_workout(
+    group_id: int,
+    date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    state: str | None = Query(None, pattern=r"^(done|undone)$"),
+) -> dict:
+    group = db.get_group(group_id)
+    if not group:
+        raise HTTPException(404, "group not found")
+    try:
+        Date.fromisoformat(date)
+    except ValueError as e:
+        raise HTTPException(400, "invalid date") from e
+    done = db.set_workout_group(group_id, date, state)
+    return {"group_id": group_id, "date": date, "done": done}
+
+
+@app.get("/api/gym/stats")
+def gym_stats() -> dict:
+    return db.exercise_stats()

@@ -49,12 +49,13 @@ export default function HomePage() {
       </motion.h1>
 
       <motion.p {...fader(0.35)} className="mt-6 font-mono text-sm text-daisy-muted">
-        status: under construction — planner + leetcode live
+        status: under construction — planner + gym + leetcode live
       </motion.p>
 
       <motion.div {...fader(0.45)} className="mt-12 flex flex-wrap items-center justify-center gap-3">
         {[
           { href: "/planner", label: "planner" },
+          { href: "/gym", label: "gym" },
           { href: "/leetcode", label: "leetcode" },
         ].map((l) => (
           <motion.div key={l.href} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.4, ease: EASE }}>

@@ -1,4 +1,4 @@
-import type { CalendarResponse, Task, ToggleResponse } from "@/lib/types";
+import type { CalendarResponse, GymCalendarResponse, GymGroup, GymStats, GymWorkoutResponse, Task, ToggleResponse } from "@/lib/types";
 
 async function j<T>(r: Response): Promise<T> {
   if (!r.ok) throw new Error(await r.text());
@@ -43,6 +43,49 @@ export function patchTask(
 
 export function deleteTask(id: number): Promise<void> {
   return fetch(`/api/tasks/${id}`, { method: "DELETE" }).then((r) => {
+    if (!r.ok) throw new Error(r.statusText);
+  });
+}
+
+export function getGymGroups(): Promise<GymGroup[]> {
+  return fetch("/api/gym/groups").then((r) => j<GymGroup[]>(r));
+}
+
+export function getGymCalendar(month: string): Promise<GymCalendarResponse> {
+  return fetch(`/api/gym/calendar?month=${month}`).then((r) => j<GymCalendarResponse>(r));
+}
+
+export function getGymStats(): Promise<GymStats> {
+  return fetch("/api/gym/stats").then((r) => j<GymStats>(r));
+}
+
+export function toggleGymWorkout(
+  groupId: number,
+  date: string,
+  state?: "done" | "undone"
+): Promise<GymWorkoutResponse> {
+  const q = state ? `&state=${state}` : "";
+  return fetch(`/api/gym/workouts/${groupId}?date=${date}${q}`, { method: "PUT" }).then((r) => j<GymWorkoutResponse>(r));
+}
+
+export function addGymGroup(name: string): Promise<GymGroup> {
+  return fetch("/api/gym/groups", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  }).then((r) => j<GymGroup>(r));
+}
+
+export function patchGymGroup(id: number, body: { name?: string; position?: number }): Promise<GymGroup> {
+  return fetch(`/api/gym/groups/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((r) => j<GymGroup>(r));
+}
+
+export function deleteGymGroup(id: number): Promise<void> {
+  return fetch(`/api/gym/groups/${id}`, { method: "DELETE" }).then((r) => {
     if (!r.ok) throw new Error(r.statusText);
   });
 }

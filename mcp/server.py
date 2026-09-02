@@ -89,6 +89,52 @@ def planner_status(date: str = "today") -> str:
     return "\n".join(lines)
 
 
+@mcp.tool
+def gym_list_groups() -> str:
+    """List all muscle groups (id, name)."""
+    return "\n".join(f"{g['id']}  {g['name']}" for g in api("/gym/groups"))
+
+
+@mcp.tool
+def gym_add_group(name: str) -> str:
+    """Add a muscle group."""
+    g = api("/gym/groups", "POST", json={"name": name})
+    return f"added group {g['id']}: {g['name']}" if isinstance(g, dict) else str(g)
+
+
+@mcp.tool
+def gym_rename_group(group_id: int, name: str) -> str:
+    """Rename a muscle group."""
+    g = api(f"/gym/groups/{group_id}", "PATCH", json={"name": name})
+    return f"group {g['id']} now: {g['name']}"
+
+
+@mcp.tool
+def gym_remove_group(group_id: int) -> str:
+    """Remove a muscle group permanently (its workout history is deleted too)."""
+    api(f"/gym/groups/{group_id}", "DELETE")
+    return f"removed group {group_id}"
+
+
+@mcp.tool
+def gym_log(group_id: int, date: str = "today", state: str | None = None) -> str:
+    """Mark a muscle group trained/untrained for a date (YYYY-MM-DD | today | yesterday). state: done|undone, omit to toggle."""
+    d = to_iso(date)
+    r = api(f"/gym/workouts/{group_id}", "PUT", params={"date": d, **({"state": state} if state else {})})
+    return f"group {r['group_id']} {'done' if r['done'] else 'undone'} for {r['date']}"
+
+
+@mcp.tool
+def gym_stats() -> str:
+    """Frequency of each muscle group, all-time and this week."""
+    s = api("/gym/stats")
+    lines = ["this week:"]
+    lines += [f"  {c['name']:<12} {c['count']}×" for c in s["week"]] or ["  none"]
+    lines.append("all time:")
+    lines += [f"  {c['name']:<12} {c['count']}×" for c in s["total"]] or ["  none"]
+    return "\n".join(lines)
+
+
 class BearerMiddleware:
     def __init__(self, app: Callable) -> None:
         self.app = app
