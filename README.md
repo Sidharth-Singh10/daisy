@@ -1,6 +1,16 @@
 # daisy
 
-A dark-mode checklist planner + NeetCode 150 → LeetCode reference.
+A dark-mode checklist planner + NeetCode 150 → LeetCode reference. (juss procrastination pro maxx )
+
+<img width="2485" height="1342" alt="image" src="https://github.com/user-attachments/assets/c7495418-bf5e-4bbc-bee9-0c738f3e2df9" />
+
+<img width="2497" height="1331" alt="image" src="https://github.com/user-attachments/assets/9c8a557d-1ef5-4844-893e-ed2bab32cd47" />
+
+<img width="2482" height="1324" alt="image" src="https://github.com/user-attachments/assets/426af383-66de-4442-8670-4ac1aca683c7" />
+
+
+
+
 
 - `/` — under construction hero
 - `/planner` — month calendar with per-day `X/N` completion (daily / weekly / monthly tasks)
