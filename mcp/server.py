@@ -135,6 +135,78 @@ def gym_stats() -> str:
     return "\n".join(lines)
 
 
+def resolve_exercise(exercise: str | int) -> dict:
+    """Find an exercise by id or (case-insensitive) name."""
+    exercises = api("/gym/exercises")
+    if isinstance(exercise, int) or (isinstance(exercise, str) and exercise.strip().isdigit()):
+        eid = int(exercise)
+        for e in exercises:
+            if e["id"] == eid:
+                return e
+        raise ValueError(f"no exercise with id {eid}")
+    q = str(exercise).strip().lower()
+    for e in exercises:
+        if e["name"].lower() == q:
+            return e
+    matches = [e for e in exercises if q in e["name"].lower()]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError(f"ambiguous exercise '{exercise}': " + ", ".join(e["name"] for e in matches))
+    raise ValueError(f"no exercise matching '{exercise}' — use gym_list_exercises to see options")
+
+
+@mcp.tool
+def gym_list_exercises() -> str:
+    """List all tracked exercises with latest set, PR weight and session count."""
+    exercises = api("/gym/exercises")
+    if not exercises:
+        return "no exercises tracked"
+    lines = []
+    for e in exercises:
+        entries = sorted(e["entries"], key=lambda x: x["date"])
+        last = entries[-1] if entries else None
+        pr = max((x["max_weight"] for x in entries), default=None)
+        latest = f"last {last['date']}: {last['max_weight']:g}kg × {last['max_reps']}" if last else "never logged"
+        pr_txt = f"pr {pr:g}kg" if pr is not None else "—"
+        lines.append(f"{e['id']}  {e['name']:<22} {latest:<34} {pr_txt:<10} {len(entries)} sessions")
+    return "\n".join(lines)
+
+
+@mcp.tool
+def gym_log_lift(exercise: str | int, weight: float, reps: int, date: str = "today") -> str:
+    """Log a best set for an exercise (by id or name). date: YYYY-MM-DD | today | yesterday — past dates backfill. Overwrites the entry for that date if one exists."""
+    e = resolve_exercise(exercise)
+    if weight <= 0 or reps <= 0:
+        return "error: weight and reps must be positive"
+    d = to_iso(date)
+    entries = [x for x in e["entries"] if x["date"] == d]
+    prev_pr = max((x["max_weight"] for x in e["entries"]), default=None)
+    r = api(f"/gym/lifts/{e['id']}", "PUT", params={"date": d}, json={"weight": weight, "reps": reps})
+    note = f"overwrote {entries[0]['max_weight']:g}kg × {entries[0]['max_reps']}" if entries else "new entry"
+    pr = " — new pr! 🏋️" if prev_pr is None or weight > prev_pr else ""
+    return f"{e['name']} on {d}: {weight:g}kg × {reps} ({note}){pr}"
+
+
+@mcp.tool
+def gym_lift_history(exercise: str | int, limit: int = 10) -> str:
+    """Recent logged sets for an exercise (by id or name), newest first."""
+    e = resolve_exercise(exercise)
+    entries = sorted(e["entries"], key=lambda x: x["date"], reverse=True)[: max(limit, 1)]
+    if not entries:
+        return f"{e['name']}: nothing logged yet"
+    lines = [f"{e['name']} — last {len(entries)} of {len(e['entries'])} sessions:"]
+    lines += [f"  {x['date']}  {x['max_weight']:g}kg × {x['max_reps']}" for x in entries]
+    return "\n".join(lines)
+
+
+@mcp.tool
+def gym_remove_lift(entry_id: int) -> str:
+    """Delete a lift entry by its id (see gym_lift_history / gym_list_exercises for ids)."""
+    api(f"/gym/lifts/{entry_id}", "DELETE")
+    return f"removed lift entry {entry_id}"
+
+
 class BearerMiddleware:
     def __init__(self, app: Callable) -> None:
         self.app = app
