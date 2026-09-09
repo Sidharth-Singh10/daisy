@@ -95,12 +95,13 @@ export function LiftProgress() {
   const sheet = exercises.find((x) => x.id === sheetId) ?? null;
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
-      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={{ duration: 0.9, ease: EASE, delay: 0.25 }}
-      className="mt-12"
-    >
+    <>
+      <motion.section
+        initial={{ opacity: 0, y: 28, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ duration: 0.9, ease: EASE, delay: 0.25 }}
+        className="mt-10"
+      >
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <Eyebrow>progression</Eyebrow>
@@ -126,7 +127,7 @@ export function LiftProgress() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           {exercises.map((ex) => {
             const color = groupColor(ex.id);
             const entries = [...ex.entries].sort((a, b) => a.date.localeCompare(b.date));
@@ -150,7 +151,7 @@ export function LiftProgress() {
                 className="rounded-[2rem] border border-white/10 bg-white/5 p-1.5"
               >
                 <div
-                  className="rounded-[calc(2rem-0.375rem)] bg-daisy-surface p-5"
+                  className="rounded-[calc(2rem-0.375rem)] bg-daisy-surface p-6"
                   style={{ boxShadow: "inset 0 1px 1px rgba(255,255,255,0.15)" }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -187,23 +188,23 @@ export function LiftProgress() {
                     aria-label={`open ${ex.name} progression`}
                   >
                     {entries.length === 0 ? (
-                      <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-white/10 font-mono text-[10px] uppercase tracking-[0.2em] text-daisy-muted/40">
+                      <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-white/10 font-mono text-[10px] uppercase tracking-[0.2em] text-daisy-muted/40">
                         no entries yet
                       </div>
                     ) : (
                       <LiftChart
                         data={entries.map((e) => ({ date: e.date, value: e.max_weight }))}
                         color={color}
-                        height={96}
+                        height={132}
                       />
                     )}
                   </button>
 
                   <div className="mt-3 flex items-baseline justify-between gap-2">
-                    <span className="font-mono text-xs text-daisy-text">
+                    <span className="font-mono text-sm text-daisy-text">
                       {last ? `${fmtWeight(last.max_weight)} kg × ${last.max_reps}` : "—"}
                     </span>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-daisy-muted/60">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.15em] text-daisy-muted/60">
                       {entries.length} {entries.length === 1 ? "session" : "sessions"}
                     </span>
                   </div>
@@ -213,6 +214,7 @@ export function LiftProgress() {
           })}
         </div>
       )}
+      </motion.section>
 
       {sheet && (
         <LiftSheet
@@ -222,6 +224,6 @@ export function LiftProgress() {
           onChanged={() => void load()}
         />
       )}
-    </motion.section>
+    </>
   );
 }

@@ -206,6 +206,7 @@ export default function GymPage() {
             today={today}
             onSelect={handleSelect}
           />
+          <LiftProgress />
         </div>
         <div className="space-y-6 xl:col-span-4">
           <motion.div
@@ -237,8 +238,6 @@ export default function GymPage() {
           </motion.div>
         </div>
       </div>
-
-      <LiftProgress />
 
       {selected && selectedDay && (
         <GymDaySheet
