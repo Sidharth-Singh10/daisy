@@ -13,15 +13,15 @@ A dark-mode checklist planner + gym tracker + NeetCode 150 → LeetCode referenc
 
 - `/` — under construction hero
 - `/planner` — month calendar with per-day `X/N` completion (daily / weekly / monthly tasks)
-- `/gym` — workout calendar: log which muscle groups you trained per day, with all-time + weekly frequency stats
+- `/gym` — workout calendar: log which muscle groups you trained per day, frequency stats, and per-exercise max-weight/rep progression charts (drag to rearrange, backfill past dates)
 - `/leetcode` — all 150 NeetCode problems, grouped by pattern, mapped to LeetCode
 
 ## Architecture
 
 ```
 app/    Next.js 15 (App Router, Tailwind v4, framer-motion, Geist + Fraunces)
-api/    FastAPI + SQLite (tasks, completions, calendar + gym workouts, muscle groups, stats)
-mcp/    fastmcp stdio server — agents update the planner over HTTP
+api/    FastAPI + SQLite (tasks, completions, calendar, gym workouts, muscle groups, exercises, lift entries, stats)
+mcp/    fastmcp streamable-HTTP server — agents update the planner + gym over HTTP
 scripts/parse_leetcode.py — neetcode150_leetcode_links.txt → app/src/data/neetcode150.json
 ```
 
@@ -87,8 +87,10 @@ stdio mode is still available for ad-hoc runs: `python mcp/server.py stdio`.
 
 Tools: `planner_list_tasks`, `planner_add_task`, `planner_update_task`,
 `planner_remove_task`, `planner_check` (done/undone/toggle), `planner_status`,
-`gym_list_groups`, `gym_add_group`, `gym_rename_group`, `gym_remove_group`,
-`gym_log`, `gym_stats`.
+`planner_month`, `gym_list_groups`, `gym_add_group`, `gym_rename_group`,
+`gym_remove_group`, `gym_log`, `gym_last_session`, `gym_stats`, `gym_month`,
+`gym_list_exercises`, `gym_log_lift` (id or fuzzy name, backfill-safe),
+`gym_lift_history`, `gym_remove_lift`, `gym_rename_exercise`.
 
 Reminder pattern — an agent (cron or a scheduled opencode run) calls
 `planner_status(date: "today")`, reads the pending list, and reminds you.
@@ -111,6 +113,10 @@ Reminder pattern — an agent (cron or a scheduled opencode run) calls
 | GET | `/api/gym/calendar?month=YYYY-MM` | per-day `{groups[]}` |
 | PUT | `/api/gym/workouts/{id}?date=YYYY-MM-DD[&state=done\|undone]` | toggle or set |
 | GET | `/api/gym/stats` | all-time + this-week frequencies |
+| GET | `/api/gym/exercises` | exercises with their lift entries |
+| PATCH | `/api/gym/exercises/{id}` | `{name?, position?}` |
+| PUT | `/api/gym/lifts/{id}?date=YYYY-MM-DD` | `{weight, reps}` — upserts the best set for that date |
+| DELETE | `/api/gym/lifts/{entry_id}` | delete a lift entry |
 
 Weekly `slot` = weekday 0–6 (Mon=0); monthly `slot` = day 1–31.
 
