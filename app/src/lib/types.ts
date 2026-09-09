@@ -72,3 +72,18 @@ export interface GymWorkoutResponse {
   date: string;
   done: boolean;
 }
+
+export interface LiftEntry {
+  id: number;
+  exercise_id: number;
+  date: string;
+  max_weight: number;
+  max_reps: number;
+}
+
+export interface ExerciseWithEntries {
+  id: number;
+  name: string;
+  position: number;
+  entries: LiftEntry[];
+}

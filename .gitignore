@@ -27,3 +27,4 @@ neetcode150_leetcode_links.txt
 # misc
 .DS_Store
 *.log
+*.tsbuildinfo

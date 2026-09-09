@@ -212,6 +212,47 @@ def toggle_workout(
     return {"group_id": group_id, "date": date, "done": done}
 
 
+@app.get("/api/gym/exercises")
+def list_exercises() -> list[dict]:
+    entries = db.fetch_lift_entries()
+    return [{**e, "entries": entries.get(e["id"], [])} for e in db.fetch_exercises()]
+
+
+class ExerciseUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=60)
+    position: int | None = None
+
+
+@app.patch("/api/gym/exercises/{exercise_id}")
+def patch_exercise(exercise_id: int, body: ExerciseUpdate) -> dict:
+    exercise = db.update_exercise(exercise_id, body.model_dump(exclude_none=True))
+    if not exercise:
+        raise HTTPException(404, "exercise not found")
+    return exercise
+
+
+class LiftSave(BaseModel):
+    weight: float = Field(gt=0, le=1000)
+    reps: int = Field(gt=0, le=1000)
+
+
+@app.put("/api/gym/lifts/{exercise_id}")
+def save_lift(exercise_id: int, body: LiftSave, date: str = Query(..., pattern=r"^\d{4}-\d{2}-\d{2}$")) -> dict:
+    if not db.get_exercise(exercise_id):
+        raise HTTPException(404, "exercise not found")
+    try:
+        Date.fromisoformat(date)
+    except ValueError as e:
+        raise HTTPException(400, "invalid date") from e
+    return db.upsert_lift(exercise_id, date, body.weight, body.reps)
+
+
+@app.delete("/api/gym/lifts/{entry_id}", status_code=204)
+def remove_lift(entry_id: int) -> None:
+    if not db.delete_lift(entry_id):
+        raise HTTPException(404, "lift entry not found")
+
+
 @app.get("/api/gym/stats")
 def gym_stats() -> dict:
     return db.exercise_stats()

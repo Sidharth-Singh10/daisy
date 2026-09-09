@@ -9,6 +9,17 @@ SEED_DAILY = ["headlamp", "servo", "NEETCODE150", "system-design", "rjagro", "ze
 
 SEED_GROUPS = ["chest", "shoulders", "back", "biceps", "triceps", "legs", "core"]
 
+SEED_EXERCISES = [
+    "shoulder press",
+    "chest press",
+    "incline chest press",
+    "lateral raises",
+    "incline bicep curl",
+    "cross body curl",
+    "lat pulldown",
+    "horizontal cable row",
+]
+
 CADENCES = ("daily", "weekly", "monthly")
 
 
@@ -58,6 +69,22 @@ def init_db() -> None:
                 created_at TEXT NOT NULL DEFAULT (datetime('now')),
                 UNIQUE(workout_id, group_id)
             );
+
+            CREATE TABLE IF NOT EXISTS exercise (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                position INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE TABLE IF NOT EXISTS lift_entry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exercise_id INTEGER NOT NULL REFERENCES exercise(id) ON DELETE CASCADE,
+                date TEXT NOT NULL,
+                max_weight REAL NOT NULL,
+                max_reps INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                UNIQUE(exercise_id, date)
+            );
             """
         )
         count = c.execute("SELECT COUNT(*) FROM task").fetchone()[0]
@@ -71,6 +98,12 @@ def init_db() -> None:
             c.executemany(
                 "INSERT INTO muscle_group (name, position) VALUES (?, ?)",
                 ((name, i) for i, name in enumerate(SEED_GROUPS)),
+            )
+        ecount = c.execute("SELECT COUNT(*) FROM exercise").fetchone()[0]
+        if ecount == 0:
+            c.executemany(
+                "INSERT INTO exercise (name, position) VALUES (?, ?)",
+                ((name, i) for i, name in enumerate(SEED_EXERCISES)),
             )
 
 
@@ -264,6 +297,61 @@ def set_workout_group(group_id: int, date_str: str, state: str | None = None) ->
             (workout_id, group_id),
         )
         return True
+
+
+def fetch_exercises() -> list[dict]:
+    with connect() as c:
+        return [dict(r) for r in c.execute("SELECT * FROM exercise ORDER BY position, id")]
+
+
+def get_exercise(exercise_id: int) -> dict | None:
+    with connect() as c:
+        r = c.execute("SELECT * FROM exercise WHERE id = ?", (exercise_id,)).fetchone()
+        return dict(r) if r else None
+
+
+def update_exercise(exercise_id: int, fields: dict) -> dict | None:
+    allowed = {k: v for k, v in fields.items() if k in ("name", "position")}
+    if not allowed:
+        return get_exercise(exercise_id)
+    with connect() as c:
+        sets = ", ".join(f"{k} = ?" for k in allowed)
+        c.execute(f"UPDATE exercise SET {sets} WHERE id = ?", (*allowed.values(), exercise_id))
+        r = c.execute("SELECT * FROM exercise WHERE id = ?", (exercise_id,)).fetchone()
+        return dict(r) if r else None
+
+
+def fetch_lift_entries() -> dict[int, list[dict]]:
+    with connect() as c:
+        rows = c.execute("SELECT * FROM lift_entry ORDER BY date, id").fetchall()
+    out: dict[int, list[dict]] = {}
+    for r in rows:
+        out.setdefault(r["exercise_id"], []).append(dict(r))
+    return out
+
+
+def upsert_lift(exercise_id: int, date_str: str, max_weight: float, max_reps: int) -> dict:
+    with connect() as c:
+        c.execute(
+            """
+            INSERT INTO lift_entry (exercise_id, date, max_weight, max_reps)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(exercise_id, date)
+            DO UPDATE SET max_weight = excluded.max_weight, max_reps = excluded.max_reps
+            """,
+            (exercise_id, date_str, max_weight, max_reps),
+        )
+        r = c.execute(
+            "SELECT * FROM lift_entry WHERE exercise_id = ? AND date = ?",
+            (exercise_id, date_str),
+        ).fetchone()
+        return dict(r)
+
+
+def delete_lift(entry_id: int) -> bool:
+    with connect() as c:
+        cur = c.execute("DELETE FROM lift_entry WHERE id = ?", (entry_id,))
+        return cur.rowcount > 0
 
 
 def exercise_stats() -> dict:

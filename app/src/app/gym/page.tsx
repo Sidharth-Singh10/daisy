@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { GymDaySheet } from "@/components/gym/GymDaySheet";
 import { GymGrid } from "@/components/gym/GymGrid";
 import { GroupPanel } from "@/components/gym/GroupPanel";
+import { LiftProgress } from "@/components/gym/LiftProgress";
 import { StatsCard } from "@/components/gym/StatsCard";
 import { MonthRail } from "@/components/planner/MonthRail";
 import { Eyebrow } from "@/components/BezCard";
@@ -236,6 +237,8 @@ export default function GymPage() {
           </motion.div>
         </div>
       </div>
+
+      <LiftProgress />
 
       {selected && selectedDay && (
         <GymDaySheet
