@@ -207,6 +207,114 @@ def gym_remove_lift(entry_id: int) -> str:
     return f"removed lift entry {entry_id}"
 
 
+def resolve_month(value: str | None) -> str:
+    """Resolve 'this' | 'last' | 'YYYY-MM' to a YYYY-MM string."""
+    v = (value or "this").strip().lower()
+    today = Date.today()
+    if v in ("this", "current", ""):
+        return today.strftime("%Y-%m")
+    if v in ("last", "prev", "previous"):
+        prev = Date(today.year, today.month, 1) - timedelta(days=1)
+        return prev.strftime("%Y-%m")
+    if len(v) == 7 and v[4] == "-":
+        Date.fromisoformat(v + "-01")
+        return v
+    raise ValueError("month must be 'this', 'last' or YYYY-MM")
+
+
+def month_starts(count: int) -> list[str]:
+    """The last `count` month keys, current month first."""
+    today = Date.today()
+    y, m = today.year, today.month
+    out = []
+    for _ in range(count):
+        out.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    return out
+
+
+def resolve_group(group: str | int) -> dict:
+    """Find a muscle group by id or (case-insensitive) name."""
+    groups = api("/gym/groups")
+    if isinstance(group, int) or (isinstance(group, str) and group.strip().isdigit()):
+        gid = int(group)
+        for g in groups:
+            if g["id"] == gid:
+                return g
+        raise ValueError(f"no muscle group with id {gid}")
+    q = str(group).strip().lower()
+    for g in groups:
+        if g["name"].lower() == q:
+            return g
+    matches = [g for g in groups if q in g["name"].lower()]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError(f"ambiguous muscle group '{group}': " + ", ".join(g["name"] for g in matches))
+    raise ValueError(f"no muscle group matching '{group}' — use gym_list_groups to see options")
+
+
+@mcp.tool
+def gym_month(month: str = "this") -> str:
+    """Workout summary for a month (month: this | last | YYYY-MM): days trained and which muscle groups each day."""
+    m = resolve_month(month)
+    cal = api(f"/gym/calendar?month={m}")
+    trained = {
+        d: [g["name"] for g in info["groups"] if g["done"]]
+        for d, info in cal["days"].items()
+        if any(g["done"] for g in info["groups"])
+    }
+    lines = [f"{m} — {len(trained)}/{len(cal['days'])} days trained"]
+    lines += [f"  {d[8:]}  {', '.join(groups)}" for d, groups in sorted(trained.items())]
+    return "\n".join(lines)
+
+
+@mcp.tool
+def planner_month(month: str = "this") -> str:
+    """Task completion summary for a month (month: this | last | YYYY-MM): per-day X/N with missed tasks."""
+    m = resolve_month(month)
+    cal = api(f"/calendar?month={m}")
+    days = cal["days"]
+    done_total = sum(d["done"] for d in days.values())
+    all_total = sum(d["total"] for d in days.values())
+    lines = [f"{m} — {done_total}/{all_total} task completions"]
+    for d, info in sorted(days.items()):
+        missed = [t["name"] for t in info["tasks"] if not t["done"]]
+        mark = "✓" if not missed and info["total"] else f"{info['done']}/{info['total']}"
+        lines.append(f"  {d[8:]}  {mark}" + (f"  missed: {', '.join(missed)}" if missed else ""))
+    return "\n".join(lines)
+
+
+@mcp.tool
+def gym_last_session(group: str | int) -> str:
+    """Most recent date a muscle group (by id or name) was trained, searching the last 12 months."""
+    g = resolve_group(group)
+    today = Date.today()
+    for m in month_starts(12):
+        cal = api(f"/gym/calendar?month={m}")
+        days = [
+            d
+            for d, info in cal["days"].items()
+            if any(x["id"] == g["id"] and x["done"] for x in info["groups"])
+        ]
+        if days:
+            last = max(days)
+            ago = (today - Date.fromisoformat(last)).days
+            when = "today" if ago == 0 else f"{ago} day{'s' if ago != 1 else ''} ago"
+            return f"{g['name']}: last trained {last} ({when})"
+    return f"{g['name']}: no sessions found in the last 12 months"
+
+
+@mcp.tool
+def gym_rename_exercise(exercise: str | int, name: str) -> str:
+    """Rename a tracked exercise (by id or name)."""
+    e = resolve_exercise(exercise)
+    r = api(f"/gym/exercises/{e['id']}", "PATCH", json={"name": name})
+    return f"exercise {r['id']} now: {r['name']}"
+
+
 class BearerMiddleware:
     def __init__(self, app: Callable) -> None:
         self.app = app
