@@ -18,8 +18,6 @@ __pycache__/
 # data
 *.db
 daisy-data
-scraped_rows.json
-neetcode150_leetcode_links.txt
 
 # playwright mcp artifacts
 .playwright-mcp/

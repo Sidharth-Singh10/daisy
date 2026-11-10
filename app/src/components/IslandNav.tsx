@@ -11,7 +11,6 @@ import { DaisyMark } from "@/components/DaisyLogo";
 const LINKS = [
   { href: "/planner", label: "planner" },
   { href: "/gym", label: "gym" },
-  { href: "/leetcode", label: "leetcode" },
   { href: "/", label: "home" },
 ];
 

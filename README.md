@@ -1,6 +1,6 @@
 # daisy
 
-A dark-mode checklist planner + gym tracker + NeetCode 150 → LeetCode reference. (juss procrastination pro maxx )
+A dark-mode checklist planner + gym tracker. (juss procrastination pro maxx )
 
 <img width="2485" height="1342" alt="image" src="https://github.com/user-attachments/assets/c7495418-bf5e-4bbc-bee9-0c738f3e2df9" />
 
@@ -14,7 +14,6 @@ A dark-mode checklist planner + gym tracker + NeetCode 150 → LeetCode referenc
 - `/` — under construction hero
 - `/planner` — month calendar with per-day `X/N` completion (daily / weekly / monthly tasks)
 - `/gym` — workout calendar: log which muscle groups you trained per day, frequency stats, and per-exercise max-weight/rep progression charts (drag to rearrange, backfill past dates)
-- `/leetcode` — all 150 NeetCode problems, grouped by pattern, mapped to LeetCode
 
 ## Architecture
 
@@ -22,7 +21,6 @@ A dark-mode checklist planner + gym tracker + NeetCode 150 → LeetCode referenc
 app/    Next.js 15 (App Router, Tailwind v4, framer-motion, Geist + Fraunces)
 api/    FastAPI + SQLite (tasks, completions, calendar, gym workouts, muscle groups, exercises, lift entries, stats)
 mcp/    fastmcp streamable-HTTP server — agents update the planner + gym over HTTP
-scripts/parse_leetcode.py — neetcode150_leetcode_links.txt → app/src/data/neetcode150.json
 ```
 
 Periods: daily = the date; weekly = ISO week (Monday key, checked once per week);
@@ -119,12 +117,6 @@ Reminder pattern — an agent (cron or a scheduled opencode run) calls
 | DELETE | `/api/gym/lifts/{entry_id}` | delete a lift entry |
 
 Weekly `slot` = weekday 0–6 (Mon=0); monthly `slot` = day 1–31.
-
-## Regenerate leetcode data
-
-```bash
-python3 scripts/parse_leetcode.py neetcode150_leetcode_links.txt app/src/data/neetcode150.json
-```
 
 ## Theme
 
